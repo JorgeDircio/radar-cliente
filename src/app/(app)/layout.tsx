@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { connection } from "next/server"
 import { Suspense } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -19,6 +20,8 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 }
 
 async function AuthenticatedApp({ children }: { children: React.ReactNode }) {
+  // Session validation is request-specific and must not run during prerendering.
+  await connection()
   await requireUser()
 
   return (
