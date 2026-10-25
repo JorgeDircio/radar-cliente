@@ -15,13 +15,15 @@ Herramienta personal para descubrir negocios mexicanos y dar seguimiento a oport
 
 ## Desarrollo local
 
-Requisitos: Node compatible con la versión instalada de Next.js, pnpm 10, Supabase CLI y Docker.
+Requisitos: Node 22 (o Node 20.9+ y menor que 25), pnpm 10, Supabase CLI y Docker. Next.js 16.4 no arranca correctamente con Node 25.
 
 ```bash
 pnpm install
 supabase start
 cp .env.example .env.local
 ```
+
+Si usas `nvm`, ejecuta `nvm use` para tomar la versión indicada por `.nvmrc` antes de `pnpm dev`.
 
 Completa `.env.local` con los valores de tu Supabase local y tu token de [DENUE, INEGI](https://www.inegi.org.mx/servicios/api_denue.html):
 
