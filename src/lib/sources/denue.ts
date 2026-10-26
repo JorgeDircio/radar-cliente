@@ -38,6 +38,18 @@ function coordinate(value: string | null, limit: number): number | null {
 }
 
 export function parseDenueResponse(value: unknown): DiscoveredBusiness[] {
+  // DENUE may return the JSON array as a JSON-encoded string (HTTP 200).
+  // Decode that envelope before validating the published record shape.
+  if (typeof value === "string") {
+    try {
+      return parseDenueResponse(JSON.parse(value))
+    } catch {
+      throw new DiscoveryError(
+        "DENUE devolvió una respuesta que no se pudo interpretar.",
+        false,
+      )
+    }
+  }
   if (value && typeof value === "object" && !Array.isArray(value)) {
     const payload = value as Record<string, unknown>
     const detail = [payload.error, payload.message, payload.mensaje]

@@ -32,6 +32,12 @@ describe("DENUE adapter", () => {
   it("accepts an empty result without inventing businesses", () => {
     expect(parseDenueResponse([])).toEqual([])
   })
+  it("decodes the JSON-encoded string returned by DENUE", () => {
+    expect(parseDenueResponse(JSON.stringify([record]))[0]).toMatchObject({
+      denue_id: "123",
+      name: "Clínica del Centro",
+    })
+  })
   it("rejects an error payload even when HTTP status is 200", () => {
     expect(() => parseDenueResponse({ error: "invalid token" })).toThrow(
       "DENUE rechazó el token configurado",
