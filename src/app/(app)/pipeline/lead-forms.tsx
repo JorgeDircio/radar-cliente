@@ -4,10 +4,11 @@ import { useActionState } from "react"
 import { ActionFeedback } from "@/components/action-feedback"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import type { ActionState } from "@/lib/discovery/model"
 import { LEAD_STAGES, type LeadStage } from "@/lib/leads/model"
-import { addLead, auditLead, generateLeadDraft, updateLeadStage } from "./actions"
+import { addLead, addLeadNote, auditLead, generateLeadDraft, markLeadDoNotContact, recordLeadContact, updateLeadStage } from "./actions"
 
 export function AddLeadForm({ businessId, searchId }: { businessId: string; searchId: string }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(addLead, {})
@@ -37,6 +38,41 @@ export function GenerateLeadDraftForm({ leadId }: { leadId: string }) {
   return <form action={action} className="flex flex-col gap-2">
     <input type="hidden" name="leadId" value={leadId} />
     <Button type="submit" variant="outline" size="sm" disabled={pending}>{pending ? "Generando…" : "Generar borrador IA"}</Button>
+    <ActionFeedback state={state} />
+  </form>
+}
+
+export function LeadNoteForm({ leadId }: { leadId: string }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(addLeadNote, {})
+  return <form action={action} className="flex flex-col gap-2">
+    <input type="hidden" name="leadId" value={leadId} />
+    <Field><FieldLabel htmlFor={`note-${leadId}`}>Nota interna</FieldLabel><textarea id={`note-${leadId}`} name="content" required minLength={2} maxLength={2000} rows={4} placeholder="Qué aprendiste, qué pidió o qué debes revisar…" className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" /></Field>
+    <Button type="submit" variant="outline" size="sm" disabled={pending}>{pending ? "Guardando…" : "Guardar nota"}</Button>
+    <ActionFeedback state={state} />
+  </form>
+}
+
+export function LeadContactForm({ leadId, doNotContact }: { leadId: string; doNotContact: boolean }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(recordLeadContact, {})
+  return <form action={action} className="flex flex-col gap-3">
+    <input type="hidden" name="leadId" value={leadId} />
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Field><FieldLabel htmlFor={`channel-${leadId}`}>Canal</FieldLabel><NativeSelect id={`channel-${leadId}`} name="channel" defaultValue="whatsapp" disabled={pending}><NativeSelectOption value="whatsapp">WhatsApp</NativeSelectOption><NativeSelectOption value="llamada">Llamada</NativeSelectOption><NativeSelectOption value="email">Email</NativeSelectOption><NativeSelectOption value="reunion">Reunión</NativeSelectOption></NativeSelect></Field>
+      <Field><FieldLabel htmlFor={`contact-status-${leadId}`}>Resultado</FieldLabel><NativeSelect id={`contact-status-${leadId}`} name="contactStatus" defaultValue="contactado" disabled={pending}><NativeSelectOption value="contactado">Contactado</NativeSelectOption><NativeSelectOption value="respondio">Respondió</NativeSelectOption><NativeSelectOption value="interesado">Interesado</NativeSelectOption><NativeSelectOption value="opt_out">Pidió no contactar</NativeSelectOption></NativeSelect></Field>
+    </div>
+    <Field><FieldLabel htmlFor={`contact-content-${leadId}`}>Qué ocurrió</FieldLabel><textarea id={`contact-content-${leadId}`} name="content" required minLength={2} maxLength={2000} rows={3} placeholder="Resumen de la conversación y respuesta…" className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" /></Field>
+    <Field><FieldLabel htmlFor={`next-action-${leadId}`}>Próxima acción (opcional)</FieldLabel><Input id={`next-action-${leadId}`} name="nextActionAt" type="datetime-local" disabled={pending} /></Field>
+    <Button type="submit" variant="outline" size="sm" disabled={pending || doNotContact}>{pending ? "Registrando…" : doNotContact ? "No contactar está activo" : "Registrar contacto"}</Button>
+    <ActionFeedback state={state} />
+  </form>
+}
+
+export function DoNotContactForm({ leadId, doNotContact }: { leadId: string; doNotContact: boolean }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(markLeadDoNotContact, {})
+  if (doNotContact) return <p className="text-sm text-destructive">Este prospecto está marcado como no contactar.</p>
+  return <form action={action} className="flex flex-col gap-2">
+    <input type="hidden" name="leadId" value={leadId} />
+    <Button type="submit" variant="outline" size="sm" disabled={pending}>{pending ? "Actualizando…" : "Marcar como no contactar"}</Button>
     <ActionFeedback state={state} />
   </form>
 }

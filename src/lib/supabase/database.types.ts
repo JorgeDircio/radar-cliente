@@ -125,7 +125,9 @@ export type Database = {
       leads: {
         Row: {
           business_id: string
+          contact_status: string
           created_at: string
+          do_not_contact: boolean
           estimated_value: number | null
           id: string
           lost_reason: string | null
@@ -137,7 +139,9 @@ export type Database = {
         }
         Insert: {
           business_id: string
+          contact_status?: string
           created_at?: string
+          do_not_contact?: boolean
           estimated_value?: number | null
           id?: string
           lost_reason?: string | null
@@ -149,7 +153,9 @@ export type Database = {
         }
         Update: {
           business_id?: string
+          contact_status?: string
           created_at?: string
+          do_not_contact?: boolean
           estimated_value?: number | null
           id?: string
           lost_reason?: string | null

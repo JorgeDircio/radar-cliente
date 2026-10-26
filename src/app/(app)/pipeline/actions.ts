@@ -132,3 +132,66 @@ export async function generateLeadDraft(_previous: ActionState, formData: FormDa
   revalidatePath("/pipeline")
   return { success: "Borrador de propuesta generado y guardado en actividades. Revisa antes de contactar." }
 }
+
+const contactChannels = ["llamada", "whatsapp", "email", "reunion"] as const
+const contactStatuses = ["contactado", "respondio", "interesado", "opt_out"] as const
+
+function parseNextAction(value: string | undefined) {
+  if (!value) return { value: null as string | null }
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? { error: "La fecha de próxima acción no es válida." } : { value: date.toISOString() }
+}
+
+export async function addLeadNote(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase, userId } = await requireUser()
+  const parsed = z.object({ leadId: z.uuid(), content: z.string().trim().min(2, "Escribe una nota.").max(2000) }).safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { error: "La nota no es válida." }
+  const { data: lead, error: leadError } = await supabase.from("leads").select("id").eq("id", parsed.data.leadId).eq("owner_id", userId).maybeSingle()
+  if (leadError || !lead) return { error: "No se encontró este prospecto." }
+  const { error } = await supabase.from("activities").insert({ owner_id: userId, lead_id: lead.id, type: "nota", content: parsed.data.content })
+  if (error) return { error: "No se pudo guardar la nota." }
+  revalidatePath(`/pipeline/${lead.id}`)
+  revalidatePath("/pipeline")
+  return { success: "Nota guardada." }
+}
+
+export async function recordLeadContact(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase, userId } = await requireUser()
+  const parsed = z.object({
+    leadId: z.uuid(),
+    channel: z.enum(contactChannels),
+    content: z.string().trim().min(2, "Describe el contacto.").max(2000),
+    contactStatus: z.enum(contactStatuses),
+    nextActionAt: z.string().trim().max(40).optional(),
+  }).safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { error: "Los datos del contacto no son válidos." }
+  const nextAction = parseNextAction(parsed.data.nextActionAt)
+  if (nextAction.error) return { error: nextAction.error }
+  const { data: lead, error: leadError } = await supabase.from("leads").select("id, stage, do_not_contact").eq("id", parsed.data.leadId).eq("owner_id", userId).maybeSingle()
+  if (leadError || !lead) return { error: "No se encontró este prospecto." }
+  if (lead.do_not_contact && parsed.data.contactStatus !== "opt_out") return { error: "Este prospecto está marcado como no contactar." }
+  const { error: activityError } = await supabase.from("activities").insert({ owner_id: userId, lead_id: lead.id, type: parsed.data.channel, content: parsed.data.content })
+  if (activityError) return { error: "No se pudo registrar el contacto." }
+  const nextStage = lead.stage === "nuevo" || lead.stage === "calificado" ? "contactado" : lead.stage
+  const { error: updateError } = await supabase.from("leads").update({
+    stage: nextStage,
+    contact_status: parsed.data.contactStatus,
+    next_action_at: nextAction.value,
+    do_not_contact: parsed.data.contactStatus === "opt_out" ? true : lead.do_not_contact,
+  }).eq("id", lead.id).eq("owner_id", userId)
+  if (updateError) return { error: "El contacto se guardó, pero no se pudo actualizar el seguimiento." }
+  revalidatePath(`/pipeline/${lead.id}`)
+  revalidatePath("/pipeline")
+  return { success: "Contacto registrado." }
+}
+
+export async function markLeadDoNotContact(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase, userId } = await requireUser()
+  const parsed = z.object({ leadId: z.uuid() }).safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { error: "El prospecto no es válido." }
+  const { data, error } = await supabase.from("leads").update({ do_not_contact: true, contact_status: "opt_out", next_action_at: null }).eq("id", parsed.data.leadId).eq("owner_id", userId).select("id").maybeSingle()
+  if (error || !data) return { error: "No se pudo marcar este prospecto." }
+  revalidatePath(`/pipeline/${data.id}`)
+  revalidatePath("/pipeline")
+  return { success: "Prospecto marcado como no contactar." }
+}

@@ -12,7 +12,7 @@ export async function getLeadDetail(leadId: string) {
   const { supabase, userId } = await requireUser()
   const { data: lead, error: leadError } = await supabase
     .from("leads")
-    .select(`id, stage, priority, next_action_at, estimated_value, lost_reason, created_at, updated_at, business:businesses!inner(${BUSINESS_FIELDS})`)
+    .select(`id, stage, priority, next_action_at, estimated_value, lost_reason, contact_status, do_not_contact, created_at, updated_at, business:businesses!inner(${BUSINESS_FIELDS})`)
     .eq("id", parsed.data)
     .eq("owner_id", userId)
     .maybeSingle()

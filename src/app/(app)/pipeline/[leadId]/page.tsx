@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getLeadDetail } from "@/lib/leads/detail"
 import { LEAD_STAGES } from "@/lib/leads/model"
-import { GenerateLeadDraftForm } from "../lead-forms"
+import { DoNotContactForm, GenerateLeadDraftForm, LeadContactForm, LeadNoteForm } from "../lead-forms"
 
 type Props = { params: Promise<{ leadId: string }> }
 
@@ -17,20 +17,34 @@ const offerNames: Record<string, string> = {
   ninguna: "Sin oferta definida",
 }
 
+const contactStatusNames: Record<string, string> = {
+  no_contactado: "Sin contactar",
+  contactado: "Contactado",
+  respondio: "Respondió",
+  interesado: "Interesado",
+  opt_out: "No contactar",
+}
+
 export default async function LeadDetailPage({ params }: Props) {
   const { leadId } = await params
   const { lead, audit, signals, score, activities } = await getLeadDetail(leadId)
   return <div className="flex flex-col gap-6">
     <Link href="/pipeline" className="flex items-center gap-2 self-start text-sm underline underline-offset-4"><ArrowLeft className="size-4" />Volver al pipeline</Link>
     <header className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-3"><h1 className="text-3xl font-semibold">{lead.business.name}</h1><Badge>{LEAD_STAGES[lead.stage]}</Badge></div>
+      <div className="flex flex-wrap items-center gap-3"><h1 className="text-3xl font-semibold">{lead.business.name}</h1><Badge>{LEAD_STAGES[lead.stage]}</Badge><Badge variant={lead.do_not_contact ? "destructive" : "secondary"}>{contactStatusNames[lead.contact_status] ?? lead.contact_status}</Badge></div>
       <p className="text-muted-foreground">{lead.business.scian_label ?? "Giro no registrado"} · {lead.business.municipio ?? lead.business.entidad ?? "Ubicación no disponible"}</p>
+      {lead.next_action_at ? <p className="text-sm text-muted-foreground">Próxima acción: <time dateTime={lead.next_action_at}>{new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short" }).format(new Date(lead.next_action_at))}</time></p> : null}
     </header>
     <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
       <Card>
         <CardHeader><CardTitle>Propuesta de valor</CardTitle><CardDescription>Usa la evidencia para explicar una oportunidad concreta, no para prometer resultados.</CardDescription></CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-3"><BusinessContact website={lead.business.website} phone={lead.business.phone} />{lead.business.email ? <a className="flex items-center gap-1 text-sm underline underline-offset-4" href={`mailto:${lead.business.email}`}><Mail className="size-4" />{lead.business.email}</a> : null}</div>
+          <div className="grid gap-4 rounded-lg border bg-muted/20 p-4 lg:grid-cols-2">
+            <LeadContactForm leadId={lead.id} doNotContact={lead.do_not_contact} />
+            <LeadNoteForm leadId={lead.id} />
+          </div>
+          <DoNotContactForm leadId={lead.id} doNotContact={lead.do_not_contact} />
           {activities.length ? <div className="flex flex-col gap-3">{activities.map((activity) => <article key={activity.id} className="rounded-lg border bg-muted/30 p-3"><div className="mb-2 flex items-center justify-between gap-3 text-xs text-muted-foreground"><Badge variant="outline">{activity.type}</Badge><time dateTime={activity.occurred_at}>{new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short" }).format(new Date(activity.occurred_at))}</time></div><p className="whitespace-pre-wrap text-sm">{activity.content}</p></article>)}</div> : <p className="text-sm text-muted-foreground">Todavía no hay una propuesta generada.</p>}
           <GenerateLeadDraftForm leadId={lead.id} />
         </CardContent>
