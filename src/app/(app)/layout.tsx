@@ -1,7 +1,9 @@
 import Link from "next/link"
 import { connection } from "next/server"
+import { Suspense } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { requireUser } from "@/lib/auth"
 
 import { logout } from "../login/actions"
@@ -13,10 +15,13 @@ const NAV = [
   { href: "/ajustes", label: "Ajustes" },
 ] as const
 
-export default async function AppLayout({ children }: LayoutProps<"/">) {
-  // The private app depends on the incoming Supabase session. Establish the
-  // request boundary before creating the client so Cache Components never
-  // attempts to prerender auth state (or its timestamps).
+export default function AppLayout({ children }: LayoutProps<"/">) {
+  return <Suspense fallback={<Skeleton className="m-6 h-64" />}><AuthenticatedApp>{children}</AuthenticatedApp></Suspense>
+}
+
+async function AuthenticatedApp({ children }: { children: React.ReactNode }) {
+  // Session validation is request-specific and must stay inside Suspense so
+  // Cache Components can prerender the surrounding shell safely.
   await connection()
   await requireUser()
 
