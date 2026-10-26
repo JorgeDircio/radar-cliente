@@ -7,7 +7,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import type { ActionState } from "@/lib/discovery/model"
 import { LEAD_STAGES, type LeadStage } from "@/lib/leads/model"
-import { addLead, auditLead, updateLeadStage } from "./actions"
+import { addLead, auditLead, generateLeadDraft, updateLeadStage } from "./actions"
 
 export function AddLeadForm({ businessId, searchId }: { businessId: string; searchId: string }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(addLead, {})
@@ -28,6 +28,15 @@ export function AuditLeadForm({ leadId }: { leadId: string }) {
   return <form action={action} className="flex flex-col gap-2">
     <input type="hidden" name="leadId" value={leadId} />
     <Button type="submit" variant="outline" size="sm" disabled={pending}>{pending ? "Analizando…" : "Analizar prospecto"}</Button>
+    <ActionFeedback state={state} />
+  </form>
+}
+
+export function GenerateLeadDraftForm({ leadId }: { leadId: string }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(generateLeadDraft, {})
+  return <form action={action} className="flex flex-col gap-2">
+    <input type="hidden" name="leadId" value={leadId} />
+    <Button type="submit" variant="outline" size="sm" disabled={pending}>{pending ? "Generando…" : "Generar borrador IA"}</Button>
     <ActionFeedback state={state} />
   </form>
 }

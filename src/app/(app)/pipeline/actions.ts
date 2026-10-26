@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
+import { generateProspectDraft } from "@/lib/ai/prospect"
 import { auditWebsite } from "@/lib/audit/website"
 import { requireUser } from "@/lib/auth"
 import type { ActionState } from "@/lib/discovery/model"
+import { aiEnv, isAiConfigured } from "@/lib/env.server"
 import { leadStageSchema } from "@/lib/leads/model"
 import { computeScore, deriveSignals } from "@/lib/scoring/model"
 import { createAdminClient } from "@/lib/supabase/admin"
@@ -90,4 +92,43 @@ export async function auditLead(_previous: ActionState, formData: FormData): Pro
   revalidatePath("/pipeline")
   revalidatePath("/radar")
   return { success: `Analizado: ${score.total}/100. Oferta sugerida: ${score.suggestedOffer}.` }
+}
+
+export async function generateLeadDraft(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase, userId } = await requireUser()
+  if (!isAiConfigured()) return { error: "Configura OPENAI_API_KEY y OPENAI_MODEL para generar borradores." }
+  const parsed = z.object({ leadId: z.uuid() }).safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { error: "El prospecto no es válido." }
+  const { data: lead, error: leadError } = await supabase
+    .from("leads")
+    .select("id, business:businesses!inner(id, name, scian_label, website, phone, email, estrato)")
+    .eq("id", parsed.data.leadId)
+    .eq("owner_id", userId)
+    .maybeSingle()
+  if (leadError || !lead) return { error: "No se encontró este prospecto." }
+  const [auditResult, signalsResult, scoreResult] = await Promise.all([
+    supabase.from("website_audits").select("url, reachable, https, responsive, psi_scores, tech, copyright_year, features, fetched_at").eq("business_id", lead.business.id).order("fetched_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("signals").select("type, code, weight, evidence").eq("business_id", lead.business.id),
+    supabase.from("scores").select("opportunity, viability, total, suggested_offer").eq("business_id", lead.business.id).maybeSingle(),
+  ])
+  if (auditResult.error || signalsResult.error || scoreResult.error) return { error: "Analiza el prospecto antes de generar el borrador." }
+  const { OPENAI_API_KEY, OPENAI_MODEL } = aiEnv()
+  const draft = await generateProspectDraft({
+    business: { name: lead.business.name, scianLabel: lead.business.scian_label, website: lead.business.website, phone: lead.business.phone, email: lead.business.email, estrato: lead.business.estrato },
+    audit: auditResult.data,
+    signals: signalsResult.data ?? [],
+    score: scoreResult.data ? { opportunity: scoreResult.data.opportunity, viability: scoreResult.data.viability, total: scoreResult.data.total ?? 0, suggestedOffer: scoreResult.data.suggested_offer } : null,
+  }, fetch, { apiKey: OPENAI_API_KEY, model: OPENAI_MODEL })
+  const content = [
+    `Resumen: ${draft.summary}`,
+    `Por qué: ${draft.rationale}`,
+    `Oferta: ${draft.offer}`,
+    `WhatsApp (borrador): ${draft.whatsappDraft}`,
+    `Web/email (borrador): ${draft.websiteDraft}`,
+    `Siguiente acción: ${draft.nextAction}`,
+  ].join("\n\n")
+  const { error } = await supabase.from("activities").insert({ owner_id: userId, lead_id: lead.id, type: "propuesta", content })
+  if (error) return { error: "No se pudo guardar el borrador generado." }
+  revalidatePath("/pipeline")
+  return { success: "Borrador de propuesta generado y guardado en actividades. Revisa antes de contactar." }
 }

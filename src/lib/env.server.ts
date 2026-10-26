@@ -12,7 +12,14 @@ const discoverySchema = adminSchema.extend({
   WORKER_SECRET: z.string().min(16),
 })
 
+const aiSchema = z.object({
+  OPENAI_API_KEY: z.string().trim().min(1),
+  OPENAI_MODEL: z.string().trim().min(1).default("gpt-5-mini"),
+})
+
 export const adminEnv = () => adminSchema.parse(process.env)
 export const discoveryEnv = () => discoverySchema.parse(process.env)
 export const isDiscoveryConfigured = () =>
   discoverySchema.safeParse(process.env).success
+export const aiEnv = () => aiSchema.parse(process.env)
+export const isAiConfigured = () => aiSchema.safeParse(process.env).success

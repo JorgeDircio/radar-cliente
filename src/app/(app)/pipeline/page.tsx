@@ -9,7 +9,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { Skeleton } from "@/components/ui/skeleton"
 import { LEAD_STAGES } from "@/lib/leads/model"
 import { getLeads } from "@/lib/leads/queries"
-import { AuditLeadForm, LeadStageForm } from "./lead-forms"
+import { AuditLeadForm, GenerateLeadDraftForm, LeadStageForm } from "./lead-forms"
 
 type SearchParams = Promise<{ page?: string }>
 
@@ -37,6 +37,7 @@ async function Pipeline({ searchParams }: { searchParams: SearchParams }) {
                 {lead.business.scores ? <p className="mt-3 text-sm text-muted-foreground">Score: <span className="font-medium text-foreground">{lead.business.scores.total}/100</span> · Oferta: {lead.business.scores.suggested_offer}</p> : <p className="mt-3 text-sm text-muted-foreground">Sin análisis todavía.</p>}
               </CardContent>
               <CardFooter><AuditLeadForm leadId={lead.id} /></CardFooter>
+              <CardFooter><GenerateLeadDraftForm leadId={lead.id} /></CardFooter>
               <CardFooter><LeadStageForm leadId={lead.id} stage={lead.stage} /></CardFooter>
             </Card>) : <p className="text-sm text-muted-foreground">Sin prospectos en esta página.</p>}
           </section>
