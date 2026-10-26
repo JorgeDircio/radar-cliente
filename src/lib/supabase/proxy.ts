@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
-const PUBLIC_PATHS = ["/login", "/auth"]
+const PUBLIC_PATHS = ["/login", "/signup", "/auth"]
 
 export async function updateSession(request: NextRequest) {
   // The worker verifies its Bearer secret, independently from browser sessions.

@@ -4,7 +4,7 @@ Herramienta personal para descubrir negocios mexicanos y dar seguimiento a oport
 
 ## Flujo implementado
 
-1. Inicia sesión con Supabase Auth.
+1. Crea una cuenta en `/signup` o inicia sesión en `/login` con Supabase Auth. En local las confirmaciones de correo están desactivadas; en un proyecto hospedado el usuario normalmente debe confirmar su email.
 2. Busca un giro o palabra clave en uno de los 32 estados. Elige un máximo de 1 a 500 registros.
 3. La búsqueda se guarda junto con su primer trabajo en una transacción. Se permiten hasta tres búsquedas activas por usuario.
 4. El worker consulta DENUE en páginas de hasta 50 negocios. Cada lote guarda negocios, relaciones y siguiente trabajo de forma atómica. Un fallo no pierde las páginas anteriores.
