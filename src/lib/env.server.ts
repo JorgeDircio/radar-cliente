@@ -13,8 +13,9 @@ const discoverySchema = adminSchema.extend({
 })
 
 const aiSchema = z.object({
-  OPENAI_API_KEY: z.string().trim().min(1),
-  OPENAI_MODEL: z.string().trim().min(1).default("gpt-5-mini"),
+  AI_GATEWAY_API_KEY: z.string().trim().min(1),
+  AI_MODEL: z.string().trim().min(1).default("openai/gpt-5.5"),
+  AI_FALLBACK_MODELS: z.string().trim().default(""),
 })
 
 export const adminEnv = () => adminSchema.parse(process.env)

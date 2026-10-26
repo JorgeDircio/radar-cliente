@@ -96,7 +96,7 @@ export async function auditLead(_previous: ActionState, formData: FormData): Pro
 
 export async function generateLeadDraft(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase, userId } = await requireUser()
-  if (!isAiConfigured()) return { error: "Configura OPENAI_API_KEY y OPENAI_MODEL para generar borradores." }
+  if (!isAiConfigured()) return { error: "Configura AI_GATEWAY_API_KEY y AI_MODEL para generar borradores." }
   const parsed = z.object({ leadId: z.uuid() }).safeParse(Object.fromEntries(formData))
   if (!parsed.success) return { error: "El prospecto no es válido." }
   const { data: lead, error: leadError } = await supabase
@@ -112,13 +112,13 @@ export async function generateLeadDraft(_previous: ActionState, formData: FormDa
     supabase.from("scores").select("opportunity, viability, total, suggested_offer").eq("business_id", lead.business.id).maybeSingle(),
   ])
   if (auditResult.error || signalsResult.error || scoreResult.error) return { error: "Analiza el prospecto antes de generar el borrador." }
-  const { OPENAI_API_KEY, OPENAI_MODEL } = aiEnv()
+  const { AI_MODEL, AI_FALLBACK_MODELS } = aiEnv()
   const draft = await generateProspectDraft({
     business: { name: lead.business.name, scianLabel: lead.business.scian_label, website: lead.business.website, phone: lead.business.phone, email: lead.business.email, estrato: lead.business.estrato },
     audit: auditResult.data,
     signals: signalsResult.data ?? [],
     score: scoreResult.data ? { opportunity: scoreResult.data.opportunity, viability: scoreResult.data.viability, total: scoreResult.data.total ?? 0, suggestedOffer: scoreResult.data.suggested_offer } : null,
-  }, fetch, { apiKey: OPENAI_API_KEY, model: OPENAI_MODEL })
+  }, { model: AI_MODEL, fallbackModels: AI_FALLBACK_MODELS.split(",").map((model) => model.trim()).filter(Boolean) })
   const content = [
     `Resumen: ${draft.summary}`,
     `Por qué: ${draft.rationale}`,
