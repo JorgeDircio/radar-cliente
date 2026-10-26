@@ -51,7 +51,12 @@ select throws_ok($$select public.complete_discovery_job((select job_id from rada
 
 set local role authenticated;
 insert into public.leads(business_id) select business_id from radar_test_ids;
+select is((select contact_status from public.leads), 'no_contactado', 'New leads start without contact');
+select is((select do_not_contact from public.leads), false, 'New leads can be contacted by default');
 update public.leads set stage = 'contactado';
+update public.leads set contact_status = 'interesado', do_not_contact = true;
+select is((select contact_status from public.leads), 'interesado', 'Owner can update contact status');
+select is((select do_not_contact from public.leads), true, 'Owner can mark a lead as no contact');
 insert into public.leads(business_id) select business_id from radar_test_ids on conflict (owner_id, business_id) do nothing;
 select is((select count(*) from public.leads), 1::bigint, 'Adding an existing lead does not duplicate it');
 select is((select stage::text from public.leads), 'contactado', 'Adding an existing lead preserves its stage');
