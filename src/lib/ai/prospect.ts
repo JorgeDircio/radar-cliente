@@ -50,7 +50,13 @@ function concreteFallback(context: ProspectContext, draft: ProspectDraft): Prosp
             : "landing"
   const serviceBusiness = /(sal[oó]n|cl[ií]nica|consultorio|restaurante|hotel|m[eé]dico|dent)/i.test(context.business.scianLabel ?? "")
   const contactOutcome = serviceBusiness ? "recibir solicitudes de cita" : "recibir solicitudes por WhatsApp"
-  const businessName = /sin nombre/i.test(context.business.name) ? "su negocio" : context.business.name
+  const businessName = /sin nombre/i.test(context.business.name)
+    ? /dent/i.test(context.business.scianLabel ?? "")
+      ? "su consultorio dental"
+      : /consultorio|cl[ií]nica/i.test(context.business.scianLabel ?? "")
+        ? "su consultorio"
+        : "su negocio"
+    : context.business.name
   const noWebsite = !context.business.website || signalTypes.has("sin_web")
   const weak = weakCopyPattern.test(`${draft.summary} ${draft.rationale} ${draft.whatsappDraft} ${draft.websiteDraft}`)
   if (!noWebsite || !weak) return { ...draft, offer }
