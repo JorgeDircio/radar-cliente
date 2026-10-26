@@ -38,6 +38,18 @@ function coordinate(value: string | null, limit: number): number | null {
 }
 
 export function parseDenueResponse(value: unknown): DiscoveredBusiness[] {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const payload = value as Record<string, unknown>
+    const detail = [payload.error, payload.message, payload.mensaje]
+      .find((item): item is string => typeof item === "string")
+      ?.toLowerCase()
+    if (detail?.includes("token")) {
+      throw new DiscoveryError(
+        "DENUE rechazó el token configurado. Verifica que sea el token de la API DENUE y vuelve a intentar.",
+        false,
+      )
+    }
+  }
   const parsed = z.array(recordSchema).safeParse(value)
   if (!parsed.success)
     throw new DiscoveryError(

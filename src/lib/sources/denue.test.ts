@@ -34,9 +34,14 @@ describe("DENUE adapter", () => {
   })
   it("rejects an error payload even when HTTP status is 200", () => {
     expect(() => parseDenueResponse({ error: "invalid token" })).toThrow(
-      "no se pudo interpretar",
+      "DENUE rechazó el token configurado",
     )
     expect(() => parseDenueResponse([{ Nombre: "Missing ID" }])).toThrow()
+  })
+  it("explains token errors returned as a successful HTTP payload", () => {
+    expect(() => parseDenueResponse({ error: "Token inválido" })).toThrow(
+      "DENUE rechazó el token configurado",
+    )
   })
   it("does not convert empty coordinates into a location at 0,0", () => {
     expect(
