@@ -19,12 +19,13 @@ export async function getLeadDetail(leadId: string) {
   if (leadError) throw new Error("No se pudo cargar el prospecto.")
   if (!lead) notFound()
 
-  const [auditResult, signalsResult, scoreResult, activitiesResult] = await Promise.all([
+  const [auditResult, signalsResult, scoreResult, activitiesResult, outreachResult] = await Promise.all([
     supabase.from("website_audits").select("id, url, reachable, https, responsive, tech, copyright_year, features, fetched_at").eq("business_id", lead.business.id).order("fetched_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("signals").select("id, type, code, weight, evidence, created_at").eq("business_id", lead.business.id).order("created_at", { ascending: false }),
     supabase.from("scores").select("opportunity, viability, total, suggested_offer, computed_at").eq("business_id", lead.business.id).maybeSingle(),
     supabase.from("activities").select("id, type, content, occurred_at").eq("lead_id", lead.id).eq("owner_id", userId).order("occurred_at", { ascending: false }).limit(20),
+    supabase.from("outreach_messages").select("id, channel, status, content, provider_message_id, sent_at, created_at").eq("lead_id", lead.id).eq("owner_id", userId).order("created_at", { ascending: false }).limit(20),
   ])
-  if (auditResult.error || signalsResult.error || scoreResult.error || activitiesResult.error) throw new Error("No se pudo cargar el análisis del prospecto.")
-  return { lead, audit: auditResult.data, signals: signalsResult.data ?? [], score: scoreResult.data, activities: activitiesResult.data ?? [] }
+  if (auditResult.error || signalsResult.error || scoreResult.error || activitiesResult.error || outreachResult.error) throw new Error("No se pudo cargar el análisis del prospecto.")
+  return { lead, audit: auditResult.data, signals: signalsResult.data ?? [], score: scoreResult.data, activities: activitiesResult.data ?? [], outreach: outreachResult.data ?? [] }
 }

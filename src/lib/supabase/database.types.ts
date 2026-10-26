@@ -9,6 +9,59 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      outreach_messages: {
+        Row: {
+          channel: string
+          content: string
+          created_at: string
+          error_message: string | null
+          id: string
+          lead_id: string
+          owner_id: string
+          provider_message_id: string | null
+          scheduled_at: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          content: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_id: string
+          owner_id?: string
+          provider_message_id?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          content?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_id?: string
+          owner_id?: string
+          provider_message_id?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activities: {
         Row: {
           content: string

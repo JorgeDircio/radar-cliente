@@ -135,11 +135,55 @@ export async function generateLeadDraft(_previous: ActionState, formData: FormDa
 
 const contactChannels = ["llamada", "whatsapp", "email", "reunion"] as const
 const contactStatuses = ["contactado", "respondio", "interesado", "opt_out"] as const
+const outreachChannels = ["whatsapp", "email"] as const
 
 function parseNextAction(value: string | undefined) {
   if (!value) return { value: null as string | null }
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? { error: "La fecha de próxima acción no es válida." } : { value: date.toISOString() }
+}
+
+const outreachInput = z.object({
+  leadId: z.uuid(),
+  channel: z.enum(outreachChannels),
+  content: z.string().trim().min(2, "Escribe el mensaje.").max(4000),
+})
+
+async function getOutreachLead(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], leadId: string, userId: string) {
+  return supabase.from("leads").select("id, do_not_contact, business:businesses!inner(phone, email)").eq("id", leadId).eq("owner_id", userId).maybeSingle()
+}
+
+export async function saveOutreachDraft(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase, userId } = await requireUser()
+  const parsed = outreachInput.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { error: "El borrador no es válido." }
+  const { data: lead, error: leadError } = await getOutreachLead(supabase, parsed.data.leadId, userId)
+  if (leadError || !lead) return { error: "No se encontró este prospecto." }
+  if (lead.do_not_contact) return { error: "Este prospecto está marcado como no contactar." }
+  const { error } = await supabase.from("outreach_messages").insert({ owner_id: userId, lead_id: lead.id, channel: parsed.data.channel, content: parsed.data.content, status: "draft" })
+  if (error) return { error: "No se pudo guardar el borrador." }
+  revalidatePath(`/pipeline/${lead.id}`)
+  return { success: "Borrador guardado." }
+}
+
+export async function simulateOutreach(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase, userId } = await requireUser()
+  const parsed = outreachInput.safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { error: "El mensaje no es válido." }
+  const { data: lead, error: leadError } = await getOutreachLead(supabase, parsed.data.leadId, userId)
+  if (leadError || !lead) return { error: "No se encontró este prospecto." }
+  if (lead.do_not_contact) return { error: "Este prospecto está marcado como no contactar." }
+  if (parsed.data.channel === "whatsapp" && !lead.business.phone) return { error: "El prospecto no tiene teléfono registrado." }
+  if (parsed.data.channel === "email" && !lead.business.email) return { error: "El prospecto no tiene email registrado." }
+  const providerMessageId = `sandbox_${crypto.randomUUID()}`
+  const sentAt = new Date().toISOString()
+  const { error: outreachError } = await supabase.from("outreach_messages").insert({ owner_id: userId, lead_id: lead.id, channel: parsed.data.channel, content: parsed.data.content, status: "simulated", provider_message_id: providerMessageId, sent_at: sentAt })
+  if (outreachError) return { error: "No se pudo registrar la simulación." }
+  const { error: activityError } = await supabase.from("activities").insert({ owner_id: userId, lead_id: lead.id, type: parsed.data.channel, content: `[Sandbox] ${parsed.data.content}` })
+  if (activityError) return { error: "La simulación se guardó, pero no se pudo registrar la actividad." }
+  revalidatePath(`/pipeline/${lead.id}`)
+  revalidatePath("/pipeline")
+  return { success: "Mensaje simulado y registrado. No se envió a ningún proveedor." }
 }
 
 export async function addLeadNote(_previous: ActionState, formData: FormData): Promise<ActionState> {

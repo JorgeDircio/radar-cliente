@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import type { ActionState } from "@/lib/discovery/model"
 import { LEAD_STAGES, type LeadStage } from "@/lib/leads/model"
-import { addLead, addLeadNote, auditLead, generateLeadDraft, markLeadDoNotContact, recordLeadContact, updateLeadStage } from "./actions"
+import { addLead, addLeadNote, auditLead, generateLeadDraft, markLeadDoNotContact, recordLeadContact, saveOutreachDraft, simulateOutreach, updateLeadStage } from "./actions"
 
 export function AddLeadForm({ businessId, searchId }: { businessId: string; searchId: string }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(addLead, {})
@@ -39,6 +39,21 @@ export function GenerateLeadDraftForm({ leadId }: { leadId: string }) {
     <input type="hidden" name="leadId" value={leadId} />
     <Button type="submit" variant="outline" size="sm" disabled={pending}>{pending ? "Generando…" : "Generar borrador IA"}</Button>
     <ActionFeedback state={state} />
+  </form>
+}
+
+export function OutreachForm({ leadId, defaultContent, doNotContact }: { leadId: string; defaultContent?: string; doNotContact: boolean }) {
+  const [draftState, draftAction, draftPending] = useActionState<ActionState, FormData>(saveOutreachDraft, {})
+  const [simState, simAction, simPending] = useActionState<ActionState, FormData>(simulateOutreach, {})
+  const pending = draftPending || simPending
+  return <form action={draftAction} className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4">
+    <input type="hidden" name="leadId" value={leadId} />
+    <div className="flex flex-col gap-1"><label htmlFor={`outreach-channel-${leadId}`} className="text-sm font-medium">Canal de prueba</label><NativeSelect id={`outreach-channel-${leadId}`} name="channel" defaultValue="whatsapp" disabled={pending}><NativeSelectOption value="whatsapp">WhatsApp (sandbox)</NativeSelectOption><NativeSelectOption value="email">Email (sandbox)</NativeSelectOption></NativeSelect></div>
+    <div className="flex flex-col gap-1"><label htmlFor={`outreach-content-${leadId}`} className="text-sm font-medium">Mensaje listo para revisar</label><textarea id={`outreach-content-${leadId}`} name="content" required minLength={2} maxLength={4000} rows={5} defaultValue={defaultContent} placeholder="Genera un borrador IA o escribe el mensaje…" className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" /></div>
+    <p className="text-xs text-muted-foreground">Modo sandbox: registra el envío y la actividad, pero no contacta a ningún negocio.</p>
+    <div className="flex flex-wrap gap-2"><Button type="submit" variant="outline" size="sm" disabled={pending || doNotContact}>{draftPending ? "Guardando…" : "Guardar borrador"}</Button><Button type="submit" formAction={simAction} size="sm" disabled={pending || doNotContact}>{simPending ? "Simulando…" : "Simular envío"}</Button></div>
+    <ActionFeedback state={draftState} />
+    <ActionFeedback state={simState} />
   </form>
 }
 
