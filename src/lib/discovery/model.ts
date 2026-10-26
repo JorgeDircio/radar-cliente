@@ -29,6 +29,7 @@ export type DiscoveredBusiness = {
 export type DiscoveryJob = {
   id: number
   searchId: string
+  type: "discover"
   attempt: number
   maxAttempts: number
   start: number

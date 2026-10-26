@@ -12,6 +12,7 @@ function setup(overrides: Partial<DiscoveryJob> = {}) {
   const job: DiscoveryJob = {
     id: 1,
     searchId: "search",
+    type: "discover",
     start: 1,
     attempt: 1,
     maxAttempts: 5,

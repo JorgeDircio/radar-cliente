@@ -26,6 +26,7 @@ export function createDiscoveryRepository(
       return {
         id: job.id,
         searchId: job.search_id,
+        type: "discover",
         start: payload.start,
         attempt: job.attempts,
         maxAttempts: job.max_attempts,
@@ -63,6 +64,10 @@ export function createDiscoveryRepository(
       })
       if (error)
         throw new Error("No se pudo registrar el resultado del trabajo.")
+      const { error: enqueueError } = await client.rpc("enqueue_audit_jobs", {
+        p_search_id: job.searchId,
+      })
+      if (enqueueError) throw new Error("No se pudieron programar las auditorías.")
     },
   }
 }

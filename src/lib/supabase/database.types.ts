@@ -459,7 +459,7 @@ export type Database = {
     }
     Functions: {
       claim_scan_jobs: {
-        Args: { p_limit?: number; p_search_id?: string }
+        Args: { p_limit?: number; p_search_id?: string; p_type?: Database["public"]["Enums"]["job_type"] }
         Returns: {
           attempts: number
           created_at: string
@@ -492,9 +492,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      complete_audit_job: {
+        Args: {
+          p_audit: Json
+          p_job_id: number
+          p_lock_token: string
+          p_score: Json
+          p_signals: Json
+        }
+        Returns: undefined
+      }
       create_discovery_search: {
         Args: { p_entidad: string; p_keywords: string; p_max_results: number }
         Returns: string
+      }
+      enqueue_audit_jobs: {
+        Args: { p_search_id: string }
+        Returns: undefined
       }
       fail_discovery_job: {
         Args: {
