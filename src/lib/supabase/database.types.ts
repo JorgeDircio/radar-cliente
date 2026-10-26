@@ -43,8 +43,10 @@ export type Database = {
       }
       proposal_pages: {
         Row: {
+          creative: Json
           cta_url: string | null
           created_at: string
+          design_variant: string
           id: string
           lead_id: string
           offer: string
@@ -58,8 +60,10 @@ export type Database = {
           whatsapp_message: string | null
         }
         Insert: {
+          creative?: Json
           cta_url?: string | null
           created_at?: string
+          design_variant?: string
           id?: string
           lead_id: string
           offer: string
@@ -73,8 +77,10 @@ export type Database = {
           whatsapp_message?: string | null
         }
         Update: {
+          creative?: Json
           cta_url?: string | null
           created_at?: string
+          design_variant?: string
           id?: string
           lead_id?: string
           offer?: string

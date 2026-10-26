@@ -12,7 +12,7 @@ export async function getPublicProposal(token: string, trackView = true) {
   const admin = createAdminClient()
   const { data, error } = await admin
     .from("proposal_pages")
-    .select("id, title, summary, rationale, offer, whatsapp_message, cta_url, created_at")
+    .select("id, title, summary, rationale, offer, whatsapp_message, cta_url, design_variant, creative, created_at")
     .eq("token", parsed.data)
     .eq("status", "published")
     .maybeSingle()

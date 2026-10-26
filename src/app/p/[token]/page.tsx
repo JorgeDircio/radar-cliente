@@ -1,7 +1,10 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { fallbackProposalCreative } from "@/lib/proposals/creative"
+import { proposalCreativeSchema } from "@/lib/proposals/model"
 import { getPublicProposal } from "@/lib/proposals/public"
+import { getLandingVariant } from "@/lib/proposals/variants"
 
 type Props = { params: Promise<{ token: string }> }
 
@@ -24,24 +27,40 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PublicProposalPage({ params }: Props) {
   const { token } = await params
   const proposal = await getPublicProposal(token)
+  const variant = getLandingVariant(proposal.design_variant)
+  const creativeResult = proposalCreativeSchema.safeParse(proposal.creative)
+  const creative = creativeResult.success
+    ? creativeResult.data
+    : fallbackProposalCreative({ businessName: proposal.title, scianLabel: null, offer: proposal.offer, summary: proposal.summary })
   const offer = offerNames[proposal.offer] ?? proposal.offer
+  const dark = variant.id === "conversion" || variant.id === "premium"
 
-  return <main className="min-h-screen bg-slate-950 px-5 py-10 text-slate-100 sm:px-8">
-    <div className="mx-auto flex max-w-3xl flex-col gap-8">
-      <div className="text-sm font-medium tracking-[0.2em] text-cyan-300 uppercase">Radar de Clientes</div>
-      <section className="rounded-3xl border border-white/10 bg-white/[0.06] p-7 shadow-2xl shadow-cyan-950/30 sm:p-10">
-        <p className="text-sm text-cyan-200">Una idea concreta para tu negocio</p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">{proposal.title}</h1>
-        <p className="mt-5 text-lg leading-8 text-slate-300">{proposal.summary}</p>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-black/15 p-5"><p className="text-xs font-medium tracking-wider text-slate-400 uppercase">Oportunidad observada</p><p className="mt-2 leading-7 text-slate-200">{proposal.rationale}</p></div>
-          <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-5"><p className="text-xs font-medium tracking-wider text-cyan-200 uppercase">Propuesta sugerida</p><p className="mt-2 font-medium leading-7 text-white">{offer}</p></div>
+  return <main className={`min-h-screen px-5 py-8 sm:px-8 sm:py-12 ${variant.pageClass}`}>
+    <div className="mx-auto flex max-w-5xl flex-col gap-8">
+      <div className={`flex items-center justify-between text-xs font-semibold tracking-[0.2em] uppercase ${variant.accentClass}`}><span>Una idea para tu negocio</span><span className="tracking-normal opacity-60">{variant.label}</span></div>
+      <section className={`overflow-hidden rounded-[2rem] border p-7 shadow-2xl sm:p-12 ${variant.shellClass}`}>
+        <div className={variant.id === "bold" || variant.id === "conversion" ? "grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end" : "grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center"}>
+          <div>
+            <p className={`text-sm font-medium ${variant.accentClass}`}>{variant.eyebrow}</p>
+            <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.04] tracking-tight sm:text-6xl">{creative.headline}</h1>
+            <p className={`mt-6 max-w-2xl text-lg leading-8 ${variant.mutedClass}`}>{creative.subheadline}</p>
+            {proposal.cta_url ? <Link href={`/api/proposals/${token}/cta`} className={`mt-8 inline-flex rounded-full px-6 py-3 font-semibold transition ${variant.buttonClass}`}>{creative.ctaLabel}</Link> : null}
+          </div>
+          <div className={`rounded-3xl border p-6 ${dark ? "border-white/15 bg-white/[0.06]" : "border-current/10 bg-black/[0.03]"}`}>
+            <p className={`text-xs font-semibold tracking-[0.16em] uppercase ${variant.accentClass}`}>Propuesta sugerida</p>
+            <p className="mt-3 text-xl font-medium leading-8">{offer}</p>
+            <p className={`mt-4 text-sm leading-6 ${variant.mutedClass}`}>{proposal.summary}</p>
+          </div>
         </div>
-        {proposal.whatsapp_message ? <blockquote className="mt-8 border-l-2 border-cyan-300 pl-4 text-slate-300">“{proposal.whatsapp_message}”</blockquote> : null}
-        {proposal.cta_url ? <Link href={`/api/proposals/${token}/cta`} className="mt-8 inline-flex rounded-full bg-cyan-300 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200">Platiquemos de esta idea</Link> : <p className="mt-8 text-sm text-slate-400">Si te interesa, responde a la persona que te compartió esta propuesta.</p>}
+        <div className="mt-10 grid gap-3 sm:grid-cols-3">
+          {creative.valuePillars.map((pillar) => <div key={pillar} className={`rounded-2xl border px-4 py-4 text-sm font-medium ${dark ? "border-white/10 bg-white/[0.04]" : "border-current/10 bg-background/40"}`}>{pillar}</div>)}
+        </div>
       </section>
-      <p className="text-center text-xs text-slate-500">Propuesta informativa, preparada a partir de señales públicas. No implica compromiso.</p>
-      <Link href="/" className="mx-auto text-xs text-slate-500 underline underline-offset-4">Conocer Radar de Clientes</Link>
+      <section className="grid gap-4 md:grid-cols-2">
+        <article className={`rounded-3xl border p-6 ${variant.shellClass}`}><p className={`text-xs font-semibold tracking-[0.16em] uppercase ${variant.accentClass}`}>Lo que observamos</p><p className={`mt-3 leading-7 ${variant.mutedClass}`}>{proposal.rationale}</p></article>
+        <article className={`rounded-3xl border p-6 ${variant.shellClass}`}><p className={`text-xs font-semibold tracking-[0.16em] uppercase ${variant.accentClass}`}>Siguiente paso</p><blockquote className={`mt-3 border-l-2 pl-4 leading-7 ${variant.mutedClass} ${variant.id === "premium" ? "border-[#e7c78d]" : "border-current/30"}`}>“{proposal.whatsapp_message ?? "¿Te comparto una idea breve?"}”</blockquote></article>
+      </section>
+      <footer className={`flex flex-col items-center gap-2 text-center text-xs ${variant.mutedClass}`}><p>Propuesta informativa, preparada a partir de señales públicas. No implica compromiso.</p><Link href="/" className="underline underline-offset-4">Conocer Radar de Clientes</Link></footer>
     </div>
   </main>
 }

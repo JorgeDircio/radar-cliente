@@ -9,7 +9,9 @@ import { requireUser } from "@/lib/auth"
 import type { ActionState } from "@/lib/discovery/model"
 import { aiEnv, isAiConfigured } from "@/lib/env.server"
 import { leadStageSchema } from "@/lib/leads/model"
+import { fallbackProposalCreative } from "@/lib/proposals/creative"
 import { parseProposalDraft } from "@/lib/proposals/model"
+import { chooseLandingVariant } from "@/lib/proposals/variants"
 import { computeScore, deriveSignals } from "@/lib/scoring/model"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { whatsappUrl } from "@/lib/businesses/contact"
@@ -128,6 +130,7 @@ export async function generateLeadDraft(_previous: ActionState, formData: FormDa
     `WhatsApp (borrador): ${draft.whatsappDraft}`,
     `Web/email (borrador): ${draft.websiteDraft}`,
     `Siguiente acción: ${draft.nextAction}`,
+    `Creative (JSON): ${JSON.stringify(draft.creative)}`,
   ].join("\n\n")
   const { error } = await supabase.from("activities").insert({ owner_id: userId, lead_id: lead.id, type: "propuesta", content })
   if (error) return { error: "No se pudo guardar el borrador generado." }
@@ -141,7 +144,7 @@ export async function publishProposalPage(_previous: ActionState, formData: Form
   if (!parsed.success) return { error: "El prospecto no es válido." }
   const { data: lead, error: leadError } = await supabase
     .from("leads")
-    .select("id, business:businesses!inner(name, phone, email)")
+    .select("id, business:businesses!inner(name, scian_label, phone, email)")
     .eq("id", parsed.data.leadId)
     .eq("owner_id", userId)
     .maybeSingle()
@@ -152,7 +155,9 @@ export async function publishProposalPage(_previous: ActionState, formData: Form
   const fallbackMessage = `Hola, ${lead.business.name}. Preparé una idea breve para mejorar su presencia digital. ¿Te la comparto?`
   const message = draft.whatsappMessage ?? fallbackMessage
   const ctaUrl = whatsappUrl(lead.business.phone, message) ?? (lead.business.email ? `mailto:${lead.business.email}?subject=${encodeURIComponent(`Idea para ${lead.business.name}`)}&body=${encodeURIComponent(draft.websiteMessage ?? message)}` : null)
-  const { data: page, error } = await supabase.from("proposal_pages").upsert({ owner_id: userId, lead_id: lead.id, status: "published", title: `Idea digital para ${lead.business.name}`, summary: draft.summary, rationale: draft.rationale, offer: draft.offer, whatsapp_message: message, cta_url: ctaUrl }, { onConflict: "owner_id,lead_id" }).select("token").single()
+  const creative = draft.creative ?? fallbackProposalCreative({ businessName: lead.business.name, scianLabel: lead.business.scian_label, offer: draft.offer, summary: draft.summary })
+  const designVariant = chooseLandingVariant(lead.business.name, draft.offer, lead.business.scian_label)
+  const { data: page, error } = await supabase.from("proposal_pages").upsert({ owner_id: userId, lead_id: lead.id, status: "published", title: creative.headline, summary: draft.summary, rationale: draft.rationale, offer: draft.offer, whatsapp_message: message, cta_url: ctaUrl, creative, design_variant: designVariant }, { onConflict: "owner_id,lead_id" }).select("token").single()
   if (error || !page) return { error: "No se pudo publicar la propuesta visual." }
   revalidatePath(`/pipeline/${lead.id}`)
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "")
