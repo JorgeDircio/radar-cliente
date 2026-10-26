@@ -31,7 +31,7 @@ async function Pipeline({ searchParams }: { searchParams: SearchParams }) {
           return <section key={stage} aria-label={label} className="flex min-w-0 flex-col gap-3 rounded-xl border bg-muted/30 p-3">
             <h2 className="flex items-center gap-2 font-semibold">{label}<Badge variant="secondary">{items.length}</Badge></h2>
             {items.length ? items.map((lead) => <Card key={lead.id}>
-              <CardHeader><CardTitle>{lead.business.name}</CardTitle><CardDescription>{lead.business.municipio ?? lead.business.entidad ?? "Ubicación no disponible"}</CardDescription></CardHeader>
+              <CardHeader><CardTitle><Link href={`/pipeline/${lead.id}`} className="hover:underline">{lead.business.name}</Link></CardTitle><CardDescription>{lead.business.municipio ?? lead.business.entidad ?? "Ubicación no disponible"}</CardDescription></CardHeader>
               <CardContent>
                 <BusinessContact website={lead.business.website} phone={lead.business.phone} />
                 {lead.business.scores ? <p className="mt-3 text-sm text-muted-foreground">Score: <span className="font-medium text-foreground">{lead.business.scores.total}/100</span> · Oferta: {lead.business.scores.suggested_offer}</p> : <p className="mt-3 text-sm text-muted-foreground">Sin análisis todavía.</p>}
