@@ -10,9 +10,10 @@ Herramienta personal para descubrir negocios mexicanos y dar seguimiento a oport
 4. El worker consulta DENUE en páginas de hasta 50 negocios. Cada lote guarda negocios, relaciones y siguiente trabajo de forma atómica. Un fallo no pierde las páginas anteriores.
 5. El Radar muestra progreso, resultados paginados, sitio registrado y teléfono. Puedes agregar negocios a tu pipeline y cambiar su etapa.
 6. En Pipeline, **Analizar prospecto** audita la web disponible, guarda señales y calcula una oferta sugerida.
-7. En Búsquedas puedes volver a resultados anteriores. Un escaneo fallido puede reintentarse desde su Radar.
+7. En Pipeline, **Generar borrador IA** prepara una propuesta y mensajes usando Vercel AI Gateway; se guardan como actividad y no se envían automáticamente.
+8. En Búsquedas puedes volver a resultados anteriores. Un escaneo fallido puede reintentarse desde su Radar.
 
-**Pendiente:** mapas, búsqueda por municipio/radio, Google Places, auditoría automática en segundo plano, agentes de IA, notas/recordatorios, re-escaneo programado y configuración de pesos. Un negocio sin web en DENUE aparece como **sin web registrada** hasta ejecutar su análisis manual.
+**Pendiente:** mapas, búsqueda por municipio/radio, Google Places, notas/recordatorios, re-escaneo programado, configuración de pesos y envío asistido por canales oficiales. La auditoría y score ya se procesan automáticamente; el borrador IA requiere `AI_GATEWAY_API_KEY`.
 
 ## Desarrollo local
 
@@ -32,6 +33,9 @@ Completa `.env.local` con los valores de tu Supabase local y tu token de [DENUE,
 - `SUPABASE_SECRET_KEY`: solo servidor; permite al worker escribir el catálogo.
 - `WORKER_SECRET`: al menos 16 caracteres. Debe coincidir con `worker_secret` en Supabase Vault.
 - `DENUE_TOKEN`: requerido para descubrir negocios.
+- `AI_GATEWAY_API_KEY`: clave del Vercel AI Gateway; se mantiene solo en servidor.
+- `AI_MODEL`: identificador del modelo principal, por ejemplo `openai/gpt-5.5`.
+- `AI_FALLBACK_MODELS`: modelos alternos separados por comas.
 - Las claves de Google Places y PageSpeed quedan reservadas para los próximos módulos.
 
 El seed configura Vault para `http://host.docker.internal:3000/api/worker` con un secreto **exclusivamente local**, indicado en `supabase/seed.sql`. Si cambias puerto o secreto, actualiza también Vault. No uses ese secreto en producción.
