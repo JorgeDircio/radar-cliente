@@ -9,8 +9,10 @@ import { requireUser } from "@/lib/auth"
 import type { ActionState } from "@/lib/discovery/model"
 import { aiEnv, isAiConfigured } from "@/lib/env.server"
 import { leadStageSchema } from "@/lib/leads/model"
+import { parseProposalDraft } from "@/lib/proposals/model"
 import { computeScore, deriveSignals } from "@/lib/scoring/model"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { whatsappUrl } from "@/lib/businesses/contact"
 
 export async function addLead(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase, userId } = await requireUser()
@@ -131,6 +133,30 @@ export async function generateLeadDraft(_previous: ActionState, formData: FormDa
   if (error) return { error: "No se pudo guardar el borrador generado." }
   revalidatePath("/pipeline")
   return { success: "Borrador de propuesta generado y guardado en actividades. Revisa antes de contactar." }
+}
+
+export async function publishProposalPage(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase, userId } = await requireUser()
+  const parsed = z.object({ leadId: z.uuid() }).safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return { error: "El prospecto no es válido." }
+  const { data: lead, error: leadError } = await supabase
+    .from("leads")
+    .select("id, business:businesses!inner(name, phone, email)")
+    .eq("id", parsed.data.leadId)
+    .eq("owner_id", userId)
+    .maybeSingle()
+  if (leadError || !lead) return { error: "No se encontró este prospecto." }
+  const { data: activity, error: activityError } = await supabase.from("activities").select("content").eq("lead_id", lead.id).eq("owner_id", userId).eq("type", "propuesta").order("occurred_at", { ascending: false }).limit(1).maybeSingle()
+  if (activityError || !activity) return { error: "Genera primero una propuesta IA." }
+  const draft = parseProposalDraft(activity.content)
+  const fallbackMessage = `Hola, ${lead.business.name}. Preparé una idea breve para mejorar su presencia digital. ¿Te la comparto?`
+  const message = draft.whatsappMessage ?? fallbackMessage
+  const ctaUrl = whatsappUrl(lead.business.phone, message) ?? (lead.business.email ? `mailto:${lead.business.email}?subject=${encodeURIComponent(`Idea para ${lead.business.name}`)}&body=${encodeURIComponent(draft.websiteMessage ?? message)}` : null)
+  const { data: page, error } = await supabase.from("proposal_pages").upsert({ owner_id: userId, lead_id: lead.id, status: "published", title: `Idea digital para ${lead.business.name}`, summary: draft.summary, rationale: draft.rationale, offer: draft.offer, whatsapp_message: message, cta_url: ctaUrl }, { onConflict: "owner_id,lead_id" }).select("token").single()
+  if (error || !page) return { error: "No se pudo publicar la propuesta visual." }
+  revalidatePath(`/pipeline/${lead.id}`)
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "")
+  return { success: `Propuesta publicada: ${baseUrl ? `${baseUrl}/p/${page.token}` : `/p/${page.token}`}` }
 }
 
 const contactChannels = ["llamada", "whatsapp", "email", "reunion"] as const

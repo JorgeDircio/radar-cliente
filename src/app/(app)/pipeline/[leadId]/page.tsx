@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getLeadDetail } from "@/lib/leads/detail"
 import { LEAD_STAGES } from "@/lib/leads/model"
-import { DoNotContactForm, GenerateLeadDraftForm, LeadContactForm, LeadNoteForm, OutreachForm } from "../lead-forms"
+import { DoNotContactForm, GenerateLeadDraftForm, LeadContactForm, LeadNoteForm, OutreachForm, PublishProposalForm } from "../lead-forms"
 
 type Props = { params: Promise<{ leadId: string }> }
 
@@ -27,7 +27,7 @@ const contactStatusNames: Record<string, string> = {
 
 export default async function LeadDetailPage({ params }: Props) {
   const { leadId } = await params
-  const { lead, audit, signals, score, activities, outreach } = await getLeadDetail(leadId)
+  const { lead, audit, signals, score, activities, outreach, proposalPage } = await getLeadDetail(leadId)
   const latestProposal = activities.find((activity) => activity.type === "propuesta")?.content
   const whatsappDraft = latestProposal?.match(/WhatsApp \(borrador\): ([\s\S]*?)(?:\n\nWeb\/email|$)/)?.[1]?.trim()
   return <div className="flex flex-col gap-6">
@@ -48,6 +48,8 @@ export default async function LeadDetailPage({ params }: Props) {
           </div>
           <DoNotContactForm leadId={lead.id} doNotContact={lead.do_not_contact} />
           <OutreachForm leadId={lead.id} defaultContent={whatsappDraft} doNotContact={lead.do_not_contact} />
+          <PublishProposalForm leadId={lead.id} />
+          {proposalPage ? <div className="rounded-lg border bg-muted/20 p-4 text-sm"><p className="font-medium">Propuesta visual publicada</p><p className="mt-1 text-muted-foreground">Comparte este enlace; el CTA registra visitas e interés en el CRM.</p><a href={`/p/${proposalPage.token}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 underline underline-offset-4"><ExternalLink className="size-4" />Abrir propuesta visual</a></div> : null}
           {outreach.length ? <div className="flex flex-col gap-2"><p className="text-sm font-medium">Mensajes de outreach</p>{outreach.map((message) => <div key={message.id} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-xs"><span>{message.channel} · {message.status}</span><time dateTime={message.created_at} className="text-muted-foreground">{new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short" }).format(new Date(message.created_at))}</time></div>)}</div> : null}
           {activities.length ? <div className="flex flex-col gap-3">{activities.map((activity) => <article key={activity.id} className="rounded-lg border bg-muted/30 p-3"><div className="mb-2 flex items-center justify-between gap-3 text-xs text-muted-foreground"><Badge variant="outline">{activity.type}</Badge><time dateTime={activity.occurred_at}>{new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short" }).format(new Date(activity.occurred_at))}</time></div><p className="whitespace-pre-wrap text-sm">{activity.content}</p></article>)}</div> : <p className="text-sm text-muted-foreground">Todavía no hay una propuesta generada.</p>}
           <GenerateLeadDraftForm leadId={lead.id} />

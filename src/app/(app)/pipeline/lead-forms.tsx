@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import type { ActionState } from "@/lib/discovery/model"
 import { LEAD_STAGES, type LeadStage } from "@/lib/leads/model"
-import { addLead, addLeadNote, auditLead, generateLeadDraft, markLeadDoNotContact, recordLeadContact, saveOutreachDraft, simulateOutreach, updateLeadStage } from "./actions"
+import { addLead, addLeadNote, auditLead, generateLeadDraft, markLeadDoNotContact, publishProposalPage, recordLeadContact, saveOutreachDraft, simulateOutreach, updateLeadStage } from "./actions"
 
 export function AddLeadForm({ businessId, searchId }: { businessId: string; searchId: string }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(addLead, {})
@@ -38,6 +38,17 @@ export function GenerateLeadDraftForm({ leadId }: { leadId: string }) {
   return <form action={action} className="flex flex-col gap-2">
     <input type="hidden" name="leadId" value={leadId} />
     <Button type="submit" variant="outline" size="sm" disabled={pending}>{pending ? "Generando…" : "Generar borrador IA"}</Button>
+    <ActionFeedback state={state} />
+  </form>
+}
+
+export function PublishProposalForm({ leadId }: { leadId: string }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(publishProposalPage, {})
+  return <form action={action} className="flex flex-col gap-2 rounded-lg border bg-muted/20 p-4">
+    <input type="hidden" name="leadId" value={leadId} />
+    <p className="text-sm font-medium">Propuesta visual compartible</p>
+    <p className="text-xs text-muted-foreground">Crea una página breve con la oferta y un CTA medible. Puedes revisarla antes de compartirla.</p>
+    <Button type="submit" variant="outline" size="sm" disabled={pending}>{pending ? "Publicando…" : "Publicar propuesta visual"}</Button>
     <ActionFeedback state={state} />
   </form>
 }

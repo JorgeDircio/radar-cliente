@@ -9,6 +9,94 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      proposal_events: {
+        Row: {
+          id: string
+          metadata: Json
+          occurred_at: string
+          proposal_id: string
+          type: string
+        }
+        Insert: {
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          proposal_id: string
+          type: string
+        }
+        Update: {
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          proposal_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_events_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposal_pages: {
+        Row: {
+          cta_url: string | null
+          created_at: string
+          id: string
+          lead_id: string
+          offer: string
+          owner_id: string
+          rationale: string
+          status: string
+          summary: string
+          title: string
+          token: string
+          updated_at: string
+          whatsapp_message: string | null
+        }
+        Insert: {
+          cta_url?: string | null
+          created_at?: string
+          id?: string
+          lead_id: string
+          offer: string
+          owner_id?: string
+          rationale: string
+          status?: string
+          summary: string
+          title: string
+          token?: string
+          updated_at?: string
+          whatsapp_message?: string | null
+        }
+        Update: {
+          cta_url?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string
+          offer?: string
+          owner_id?: string
+          rationale?: string
+          status?: string
+          summary?: string
+          title?: string
+          token?: string
+          updated_at?: string
+          whatsapp_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_pages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outreach_messages: {
         Row: {
           channel: string

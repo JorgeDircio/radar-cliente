@@ -22,3 +22,10 @@ export function phoneUrl(value: string | null): string | null {
   const number = value?.replace(/[^\d+]/g, "")
   return number && /^\+?\d{7,15}$/.test(number) ? `tel:${number}` : null
 }
+
+export function whatsappUrl(value: string | null, message?: string): string | null {
+  const digits = value?.replace(/\D/g, "")
+  if (!digits || digits.length < 10 || digits.length > 15) return null
+  const phone = digits.length === 10 ? `52${digits}` : digits
+  return `https://wa.me/${phone}${message ? `?text=${encodeURIComponent(message)}` : ""}`
+}
