@@ -2,9 +2,9 @@
 
 ## Estado de implementación — 25 de octubre de 2026
 
-Disponible: login, búsqueda DENUE por giro y estado, cola con reintentos, resultados paginados, historial de búsquedas y pipeline con cambio de etapa. Se permite agregar manualmente un negocio al pipeline antes de auditarlo. Ver [ADR 0005](adr/0005-primer-flujo-de-descubrimiento.md) y el README para configuración y pruebas.
+Disponible: login, búsqueda DENUE por giro y estado, cola con reintentos, resultados paginados, historial, pipeline con cambio de etapa y análisis manual de prospectos (auditoría web, señales, score y oferta sugerida). Se permite agregar manualmente un negocio al pipeline antes de auditarlo. Ver [ADR 0005](adr/0005-primer-flujo-de-descubrimiento.md) y el README para configuración y pruebas.
 
-Las secciones siguientes describen la visión completa: Places, auditoría, scoring, mapa, recordatorios y re-escaneos programados todavía están pendientes.
+Las secciones siguientes describen la visión completa: Places, auditoría automática en segundo plano, agentes de IA, mapa, recordatorios y re-escaneos programados todavía están pendientes.
 
 ## Visión
 

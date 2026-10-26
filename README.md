@@ -9,9 +9,10 @@ Herramienta personal para descubrir negocios mexicanos y dar seguimiento a oport
 3. La búsqueda se guarda junto con su primer trabajo en una transacción. Se permiten hasta tres búsquedas activas por usuario.
 4. El worker consulta DENUE en páginas de hasta 50 negocios. Cada lote guarda negocios, relaciones y siguiente trabajo de forma atómica. Un fallo no pierde las páginas anteriores.
 5. El Radar muestra progreso, resultados paginados, sitio registrado y teléfono. Puedes agregar negocios a tu pipeline y cambiar su etapa.
-6. En Búsquedas puedes volver a resultados anteriores. Un escaneo fallido puede reintentarse desde su Radar.
+6. En Pipeline, **Analizar prospecto** audita la web disponible, guarda señales y calcula una oferta sugerida.
+7. En Búsquedas puedes volver a resultados anteriores. Un escaneo fallido puede reintentarse desde su Radar.
 
-**Pendiente:** mapas, búsqueda por municipio/radio, Google Places, auditoría web, señales y scoring, notas/recordatorios, re-escaneo programado y configuración de pesos. Un negocio sin web en DENUE aparece como **sin web registrada**; todavía no se ha auditado. El pipeline permite selección manual antes de disponer del scoring.
+**Pendiente:** mapas, búsqueda por municipio/radio, Google Places, auditoría automática en segundo plano, agentes de IA, notas/recordatorios, re-escaneo programado y configuración de pesos. Un negocio sin web en DENUE aparece como **sin web registrada** hasta ejecutar su análisis manual.
 
 ## Desarrollo local
 
@@ -52,7 +53,7 @@ Crea un usuario desde Authentication en Supabase Studio y entra en `http://local
 - Una invocación procesa hasta dos páginas, con timeout de 12 segundos por petición a DENUE.
 - Los fallos transitorios usan espera exponencial y máximo de cinco intentos. Los errores permanentes requieren intervención.
 - Los bloqueos vencen después de cinco minutos. Un token de bloqueo evita escrituras de trabajadores que hayan perdido su turno.
-- Solo se procesan trabajos `discover` en esta entrega. Las etapas `enrich`, `audit` y `score` quedan pendientes.
+- El worker automático todavía procesa solo trabajos `discover`; la auditoría y el score se pueden ejecutar manualmente desde Pipeline. Las etapas `enrich`, `audit` y `score` en segundo plano quedan pendientes.
 
 ## Arquitectura y pruebas
 
