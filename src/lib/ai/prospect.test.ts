@@ -16,4 +16,15 @@ describe("prospect AI adapter", () => {
     await expect(generateProspectDraft(context, { model: "openai/gpt-test", fallbackModels: ["anthropic/test-model"] }, generate)).resolves.toMatchObject({ offer: "landing" })
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({ model: "openai/gpt-test", providerOptions: { gateway: { models: ["anthropic/test-model"] } } }))
   })
+
+  it("turns a defensive no-website answer into a concrete offer", async () => {
+    const generate = vi.fn().mockResolvedValue({ output: prospectDraftSchema.parse({
+      summary: "La información no basta para identificar una oportunidad.", rationale: "No hay sitio web ni señales para recomendar algo específico.", offer: "ninguna", whatsappDraft: "No tengo suficiente información. ¿Una llamada de diagnóstico?", websiteDraft: "No tengo suficiente información para recomendar un servicio.", nextAction: "Proponer una conversación de diagnóstico",
+    }) })
+    const result = await generateProspectDraft(context, { model: "openai/gpt-test", fallbackModels: [] }, generate)
+    expect(result.offer).toBe("landing")
+    expect(result.whatsappDraft).toContain("landing")
+    expect(result.whatsappDraft).toContain("¿Te envío un ejemplo por aquí?")
+    expect(result.summary).not.toContain("no basta")
+  })
 })
