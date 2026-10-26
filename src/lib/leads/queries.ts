@@ -7,7 +7,7 @@ export async function getLeads(page: number) {
   const { supabase, userId } = await requireUser()
   const { data, count, error } = await supabase
     .from("leads")
-    .select(`id, stage, business:businesses!inner(${BUSINESS_FIELDS})`, {
+    .select(`id, stage, business:businesses!inner(${BUSINESS_FIELDS}, scores(opportunity, viability, total, suggested_offer, computed_at))`, {
       count: "exact",
     })
     .eq("owner_id", userId)

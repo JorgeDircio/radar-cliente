@@ -9,7 +9,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { Skeleton } from "@/components/ui/skeleton"
 import { LEAD_STAGES } from "@/lib/leads/model"
 import { getLeads } from "@/lib/leads/queries"
-import { LeadStageForm } from "./lead-forms"
+import { AuditLeadForm, LeadStageForm } from "./lead-forms"
 
 type SearchParams = Promise<{ page?: string }>
 
@@ -32,7 +32,11 @@ async function Pipeline({ searchParams }: { searchParams: SearchParams }) {
             <h2 className="flex items-center gap-2 font-semibold">{label}<Badge variant="secondary">{items.length}</Badge></h2>
             {items.length ? items.map((lead) => <Card key={lead.id}>
               <CardHeader><CardTitle>{lead.business.name}</CardTitle><CardDescription>{lead.business.municipio ?? lead.business.entidad ?? "Ubicación no disponible"}</CardDescription></CardHeader>
-              <CardContent><BusinessContact website={lead.business.website} phone={lead.business.phone} /></CardContent>
+              <CardContent>
+                <BusinessContact website={lead.business.website} phone={lead.business.phone} />
+                {lead.business.scores ? <p className="mt-3 text-sm text-muted-foreground">Score: <span className="font-medium text-foreground">{lead.business.scores.total}/100</span> · Oferta: {lead.business.scores.suggested_offer}</p> : <p className="mt-3 text-sm text-muted-foreground">Sin análisis todavía.</p>}
+              </CardContent>
+              <CardFooter><AuditLeadForm leadId={lead.id} /></CardFooter>
               <CardFooter><LeadStageForm leadId={lead.id} stage={lead.stage} /></CardFooter>
             </Card>) : <p className="text-sm text-muted-foreground">Sin prospectos en esta página.</p>}
           </section>

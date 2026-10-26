@@ -1,5 +1,6 @@
 import type { WebsiteAudit } from "@/lib/audit/model"
 import type { DiscoveredBusiness } from "@/lib/discovery/model"
+import type { Json } from "@/lib/supabase/database.types"
 
 export const SIGNAL_TYPES = ["sin_web", "web_mala", "procesos_manuales", "actividad"] as const
 export type SignalType = (typeof SIGNAL_TYPES)[number]
@@ -8,7 +9,7 @@ export type Signal = {
   type: SignalType
   code: string
   weight: number
-  evidence: Record<string, unknown>
+  evidence: { [key: string]: Json | undefined }
 }
 export type Score = {
   opportunity: number
